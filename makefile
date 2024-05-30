@@ -1,9 +1,12 @@
-OBJS = 	main.o assistant.o 
+CPPFLAGS += -std=c++11 -Wall
+LDFLAGS += -pthread -lcurl -lasound -ljsoncpp -lvosk -lpv_porcupine
 
-# compile code and create executable file
-silence : $(OBJS)
-	g++ -pthread -o silence $(OBJS)
+OBJS = main.o assistant.o
 
-# remove extra files
-clean :
-	rm -rf *.o	
+silence: $(OBJS)
+	g++ $(LDFLAGS) -o silence $(OBJS)
+
+clean:
+	rm -rf *.o silence
+
+#g++ -pthread -o silence main.o assistant.o -lasound -lcurl -ljsoncpp -lvosk -lpv_porcupine

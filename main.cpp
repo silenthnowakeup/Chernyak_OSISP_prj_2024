@@ -1,6 +1,20 @@
 //-------------------main.c++--------------------
 
 #include "assistant.h"
+#include "pv_porcupine.h"
+#include "vosk_api.h"
+#include <alsa/asoundlib.h>
+#include <curl/curl.h>// Подключите библиотеку cURL для HTTP-запросов
+#include <fstream>
+#include <iostream>
+#include <jsoncpp/json/json.h>// Подключите библиотеку JSON для работы с результатами Vosk
+#include <regex>
+#include <sstream>
+#include <unordered_set>
+
+#define SAMPLE_RATE 16000
+#define NUM_CHANNELS 1
+#define FRAME_LENGTH 512
 
 using namespace assistant;
 
@@ -34,16 +48,308 @@ void srch(string, string extra = "");
 void update_song(string);   //copy song name from different files(list.txt) file into one file(songs.txt)
 void settings(); // user settings
 
-int main()
-{
-	init(); // init silence
 
-	user_name = get_uname();
+#include "pv_porcupine.h"
+#include "vosk_api.h"
+#include <alsa/asoundlib.h>
+#include <curl/curl.h>// Подключите библиотеку cURL для HTTP-запросов
+#include <fstream>
+#include <iostream>
+#include <jsoncpp/json/json.h>// Подключите библиотеку JSON для работы с результатами Vosk
+#include <regex>
+#include <sstream>
+#include <unordered_set>
 
-	repeat();
+#define SAMPLE_RATE 16000
+#define NUM_CHANNELS 1
+#define FRAME_LENGTH 512
 
-	return 0;
+const char* access_key = "8hu5VS6YtfRL+TZT6H6LKAcsXc2f0GxkHQsLGwvWd1IT23RtqnMDpg==";
+const char* keyword_path = "/home/silenth/testVoskApi/Компьютер_ru_linux_v3_0_0.ppn";
+const char* model_file_path = "/home/silenth/porcupine/lib/common/porcupine_params_ru.pv";
+const char* model_path = "/home/silenth/testVoskApi/model_small";
+const char* weather_api_key = "8b64246bdd074b4f8a710502242705"; // Ваш API-ключ OpenWeatherMap
+
+const std::unordered_set<std::string> city_endings = {"е", "и", "у", "а", "ом"};
+
+// Функция для воспроизведения WAV файла
+void play_wav(const std::string& file_path) {
+  snd_pcm_t *playback_handle;
+  snd_pcm_hw_params_t *hw_params;
+  int err;
+  unsigned int sample_rate = 44100; // Задайте частоту дискретизации, соответствующую вашему файлу
+  int channels = 2; // Задайте количество каналов (1 для моно, 2 для стерео)
+
+  if ((err = snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+    std::cerr << "Cannot open audio device: " << snd_strerror(err) << std::endl;
+    return;
+  }
+
+  snd_pcm_hw_params_alloca(&hw_params);
+  snd_pcm_hw_params_any(playback_handle, hw_params);
+  snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+  snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_S16_LE);
+  snd_pcm_hw_params_set_rate(playback_handle, hw_params, sample_rate, 0);
+  snd_pcm_hw_params_set_channels(playback_handle, hw_params, channels);
+
+  if ((err = snd_pcm_hw_params(playback_handle, hw_params)) < 0) {
+    std::cerr << "Cannot set parameters: " << snd_strerror(err) << std::endl;
+    snd_pcm_close(playback_handle);
+    return;
+  }
+
+  std::ifstream wav_file(file_path, std::ios::binary);
+  if (!wav_file) {
+    std::cerr << "Cannot open WAV file: " << file_path << std::endl;
+    snd_pcm_close(playback_handle);
+    return;
+  }
+
+  wav_file.seekg(44); // Пропустите заголовок WAV файла
+
+  char buffer[4096];
+  while (!wav_file.eof()) {
+    wav_file.read(buffer, sizeof(buffer));
+    std::streamsize bytes_read = wav_file.gcount();
+    if (bytes_read > 0) {
+      snd_pcm_writei(playback_handle, buffer, bytes_read / 4);
+    }
+  }
+
+  snd_pcm_drain(playback_handle);
+  snd_pcm_close(playback_handle);
 }
+
+// Функция инициализации Porcupine
+pv_porcupine_t* init_porcupine() {
+  pv_porcupine_t *porcupine;
+  const float sensitivity = 1.f;
+  pv_status_t status = pv_porcupine_init(access_key, model_file_path, 1, &keyword_path, &sensitivity, &porcupine);
+  if (status != PV_STATUS_SUCCESS) {
+    std::cerr << "Failed to initialize Porcupine: " << pv_status_to_string(status) << std::endl;
+    exit(1);
+  }
+  return porcupine;
+}
+
+// Функция инициализации ALSA
+snd_pcm_t* init_alsa() {
+  snd_pcm_t *capture_handle;
+  snd_pcm_hw_params_t *hw_params;
+  int err;
+
+  if ((err = snd_pcm_open(&capture_handle, "default", SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+    std::cerr << "Cannot open audio device: " << snd_strerror(err) << std::endl;
+    exit(1);
+  }
+
+  snd_pcm_hw_params_alloca(&hw_params);
+  snd_pcm_hw_params_any(capture_handle, hw_params);
+  snd_pcm_hw_params_set_access(capture_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+  snd_pcm_hw_params_set_format(capture_handle, hw_params, SND_PCM_FORMAT_S16_LE);
+  snd_pcm_hw_params_set_rate(capture_handle, hw_params, SAMPLE_RATE, 0);
+  snd_pcm_hw_params_set_channels(capture_handle, hw_params, NUM_CHANNELS);
+
+  if ((err = snd_pcm_hw_params(capture_handle, hw_params)) < 0) {
+    std::cerr << "Cannot set parameters: " << snd_strerror(err) << std::endl;
+    exit(1);
+  }
+
+  if ((err = snd_pcm_prepare(capture_handle)) < 0) {
+    std::cerr << "Cannot prepare audio interface: " << snd_strerror(err) << std::endl;
+    exit(1);
+  }
+
+  return capture_handle;
+}
+
+// Функция для чтения данных с ALSA
+int read_audio_data(snd_pcm_t* capture_handle, int16_t* buffer) {
+  int err = snd_pcm_readi(capture_handle, buffer, FRAME_LENGTH);
+  if (err != FRAME_LENGTH) {
+    std::cerr << "Read from audio interface failed: " << snd_strerror(err) << std::endl;
+    exit(1);
+  }
+  return err;
+}
+
+// Функция для выполнения команд
+void execute_command(const std::string& command) {
+  if (command == "включи свет") {
+    std::cout << "Включение света..." << std::endl;
+    // Реализация включения света
+  } else if (command == "выключи свет") {
+    std::cout << "Выключение света..." << std::endl;
+    // Реализация выключения света
+  } else {
+    std::cout << "Неизвестная команда: " << command << std::endl;
+  }
+}
+
+// Функция для выполнения поиска информации
+void search_information(const std::string& query) {
+  std::cout << "Поиск информации: " << query << std::endl;
+  // Здесь можно реализовать поиск информации, например, используя внешние API
+}
+
+std::string remove_city_ending(const std::string& city) {
+  for (const auto& ending : city_endings) {
+    if (city.size() > ending.size() && city.substr(city.size() - ending.size()) == ending) {
+      return city.substr(0, city.size() - ending.size());
+    }
+  }
+  return city;
+}
+
+// Функция обратного вызова для curl
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) {
+  size_t totalSize = size * nmemb;
+  s->append(static_cast<char*>(contents), totalSize);
+  return totalSize;
+}
+
+// Функция получения информации о погоде
+std::string get_weather(const std::string& city) {
+  CURL* curl;
+  CURLcode res;
+  std::string readBuffer;
+  std::string apiKey = "8b64246bdd074b4f8a710502242705";
+  std::string url = "http://api.weatherapi.com/v1/current.json?key=" + apiKey + "&q=" + city + "&aqi=no";
+
+  std::cout << "URL: " << url << std::endl; // Вывод URL для проверки
+
+  curl = curl_easy_init();
+  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+  res = curl_easy_perform(curl);
+  curl_easy_cleanup(curl);
+
+  std::cout << "API Response: " << readBuffer << std::endl; // Вывод содержимого readBuffer для проверки
+
+  // Проверка на пустой ответ
+  if (readBuffer.empty()) {
+    return "Ошибка: пустой ответ от сервера погоды";
+  }
+
+  // Разбор JSON-ответа
+  Json::CharReaderBuilder readerBuilder;
+  Json::Value root;
+  std::string errs;
+
+  std::istringstream s(readBuffer);
+  if (!Json::parseFromStream(readerBuilder, s, &root, &errs)) {
+    std::cerr << "Error parsing JSON: " << errs << std::endl;
+    return "Ошибка при разборе ответа от сервера погоды";
+  }
+
+  // Проверка на наличие ключевых полей в JSON
+  if (!root.isMember("location") || !root.isMember("current")) {
+    return "Ошибка: некорректный формат ответа от сервера погоды";
+  }
+
+  // Извлечение информации из JSON
+  std::string location = root["location"]["name"].asString();
+  std::string country = root["location"]["country"].asString();
+  double temp_c = root["current"]["temp_c"].asDouble();
+  std::string condition = root["current"]["condition"]["text"].asString();
+  double wind_kph = root["current"]["wind_kph"].asDouble();
+  int humidity = root["current"]["humidity"].asInt();
+  double feelslike_c = root["current"]["feelslike_c"].asDouble();
+
+  // Формирование строки с информацией о погоде
+  std::ostringstream weather_info;
+  weather_info << "Местоположение: " << location << ", " << country << "\n"
+               << "Температура: " << temp_c << "°C\n"
+               << "Состояние: " << condition << "\n"
+               << "Скорость ветра: " << wind_kph << " км/ч\n"
+               << "Влажность: " << humidity << "%\n"
+               << "Ощущается как: " << feelslike_c << "°C\n";
+
+  return weather_info.str();
+}
+
+void process_audio(snd_pcm_t* capture_handle, pv_porcupine_t* porcupine, VoskRecognizer* recognizer) {
+  int16_t buffer[FRAME_LENGTH];
+  bool is_wake_word_detected = false;
+  int err;
+
+  while (true) {
+    err = read_audio_data(capture_handle, buffer);
+
+    int32_t result;
+    pv_status_t status = pv_porcupine_process(porcupine, buffer, &result);
+    if (status != PV_STATUS_SUCCESS) {
+      std::cerr << "Failed to process audio: " << pv_status_to_string(status) << std::endl;
+      exit(1);
+    }
+
+    if (result >= 0) {
+      std::cout << "Wake word detected!" << std::endl;
+      play_wav("/home/silenth/testVoskApi/jarvis-og/greet1.wav"); // Замените путь на путь к вашему аудио файлу
+      is_wake_word_detected = true;
+    }
+
+    // Передача данных в Vosk, если isListening = true
+    if (is_wake_word_detected && vosk_recognizer_accept_waveform(recognizer, (const char*)buffer, err * 2)) {
+      const char* result_json = vosk_recognizer_result(recognizer);
+      std::cout << result_json << std::endl;
+      is_wake_word_detected = false;
+    }
+  }
+}
+
+int main() {
+  vosk_set_log_level(0);
+  VoskModel *model = vosk_model_new(model_path);
+  if (!model) {
+    std::cerr << "Failed to load the model" << std::endl;
+    return -1;
+  }
+
+  pv_porcupine_t *porcupine = init_porcupine();
+  snd_pcm_t *capture_handle = init_alsa();
+  VoskRecognizer *recognizer = vosk_recognizer_new(model, SAMPLE_RATE);
+  if (!recognizer) {
+    std::cerr << "Failed to create recognizer" << std::endl;
+    return -1;
+  }
+
+  process_audio(capture_handle, porcupine, recognizer);
+
+  vosk_recognizer_free(recognizer);
+  vosk_model_free(model);
+  snd_pcm_drain(capture_handle);
+  snd_pcm_close(capture_handle);
+  pv_porcupine_delete(porcupine);
+
+  return 0;
+}
+
+
+//int main()
+//{
+//  porcupine = init_porcupine();
+//  capture_handle = init_alsa();
+//  recognizer = vosk_recognizer_new(model_path, SAMPLE_RATE);
+//
+//  if (!porcupine || !capture_handle || !recognizer) {
+//    std::cerr << "Failed to initialize Porcupine, ALSA, or Vosk" << std::endl;
+//    return 1;
+//  }
+//
+//  while (true) {
+//    process_audio(capture_handle, porcupine, recognizer);
+//  }
+//
+//  pv_porcupine_delete(porcupine);
+//  snd_pcm_drain(capture_handle);
+//  snd_pcm_close(capture_handle);
+//  vosk_recognizer_free(recognizer);
+//
+//  return 0;
+//
+//}
 
 //-----------------------------Repeat function-------------------------//
 void repeat()
@@ -161,9 +467,8 @@ void check()
 	{
 		system("mkdir My_beat");
 
-		install("hindi");
+		install("russian");
 		install("english");
-		install("punjabi");
 		install("others");
 		cout << "\nCreating folders...";
 		usleep(t_const * 200);
