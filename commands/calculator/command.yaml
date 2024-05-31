@@ -1,0 +1,29 @@
+list:
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/calculator/scripts/open_calculator.sh
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+    phrases:
+      - включи калькулятор
+      - открой калькулятор
+      - покажи калькулятор
+      - запусти калькулятор
+      - калькулятор
+
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/calculator/scripts/close_calculator.sh
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+    phrases:
+      - закрой калькулятор
+      - отключи калькулятор
+      - выключи калькулятор
+      - убери калькулятор

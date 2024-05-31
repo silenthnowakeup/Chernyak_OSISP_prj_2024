@@ -1,0 +1,92 @@
+list:
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/browser/scripts/run_browser.sh
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+    phrases:
+      - открой браузер
+      - открой мозиллу
+      - открой фаерфокс
+
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/browser/scripts/close_browser.sh
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+        - ok4
+    phrases:
+      - закрой все браузеры
+      - закрой браузер
+      - выключи браузер
+      - убери браузер
+
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/browser/scripts/run_website.sh
+      cli_args:
+        - http://google.com
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+        - ok4
+    phrases:
+      - открой гугл
+      - запусти гугл
+      - перейди в гугл
+
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/browser/scripts/run_website.sh
+      cli_args:
+        - http://youtube.com
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+        - ok4
+    phrases:
+      - открой ютуб
+      - ютуб
+      - запусти ютуб
+
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/browser/scripts/run_website.sh
+      cli_args:
+        - https://translate.google.com
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+        - ok4
+    phrases:
+      - открой переводчик
+      - переводчик
+      - запусти переводчик
+  - command:
+      action: cli
+      cli_cmd: /home/silenth/virtual-assistant/commands/browser/scripts/run_website.sh
+      cli_args:
+        - https://soundcloud.com/
+    voice:
+      sounds:
+        - ok1
+        - ok2
+        - ok3
+        - ok4
+    phrases:
+      - включи музыку
+      - музыка
+      - включи что-нибудь послушать
+      - хочу послушать что-нибудь

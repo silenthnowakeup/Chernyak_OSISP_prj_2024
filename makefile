@@ -1,12 +1,15 @@
-CPPFLAGS += -std=c++11 -Wall
-LDFLAGS += -pthread -lcurl -lasound -ljsoncpp -lvosk -lpv_porcupine
-
+CPPFLAGS += -std=c++17 -Wall
+LDFLAGS += -lcurl -lasound -ljsoncpp -lvosk -lpv_porcupine -lyaml-cpp
+LDFLAG += -pthread
+BIN_DIR=./bin
 OBJS = main.o assistant.o
 
-silence: $(OBJS)
-	g++ $(LDFLAGS) -o silence $(OBJS)
+silence: src/main.cpp src/assistant.cpp src/assistant.h
+	mkdir -p $(BIN_DIR)
+	g++ $(LDFLAG) -o $(BIN_DIR)/$@ $^ $(LDFLAGS)
 
 clean:
-	rm -rf *.o silence
+	rm -rf $(BIN_DIR)
+
 
 #g++ -pthread -o silence main.o assistant.o -lasound -lcurl -ljsoncpp -lvosk -lpv_porcupine
