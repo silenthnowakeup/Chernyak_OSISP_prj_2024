@@ -1,116 +1,124 @@
-list:
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/roll_up_windows.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-    phrases:
-      - сверни все окна
-      - сверни окна
+  list:
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/roll_up_windows.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+      phrases:
+        - сверни все окна
+        - сверни окна
 
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/empty_trash.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-    phrases:
-      - очисти корзину
-      - почисти корзину
-      - очистка корзины
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/empty_trash.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+      phrases:
+        - очисти корзину
+        - почисти корзину
+        - очистка корзины
 
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/task_manager_open.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-    phrases:
-      - запусти диспетчер задач
-      - открой диспетчер задач
-      - диспетчер задач
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/task_manager_open.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+      phrases:
+        - запусти диспетчер задач
+        - открой диспетчер задач
+        - диспетчер задач
 
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/screenshot.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-    phrases:
-      - сделай скриншот
-      - сделай снимок экрана
-      - сними экран
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/screenshot.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+      phrases:
+        - сделай скриншот
+        - сделай снимок экрана
+        - сними экран
 
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/blocking.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-        - ok4
-    phrases:
-      - заблокируй компьютер
-      - заблокируй комп
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/blocking.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+          - ok4
+      phrases:
+        - заблокируй компьютер
+        - заблокируй комп
 
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/sleep.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-        - ok4
-    phrases:
-      - спящий режим
-      - ждущий режим
-      - иди поспи
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/sleep.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+          - ok4
+      phrases:
+        - спящий режим
+        - ждущий режим
+        - иди поспи
 
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/clipboard.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-    phrases:
-      - открой буфер обмена
-      - покажи буфер обмена
-      - запусти буфер обмена
-      - буфер обмена
-
-  - command:
-      action: cli
-      cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/set_language.sh
-    voice:
-      sounds:
-        - ok1
-        - ok2
-        - ok3
-    phrases:
-      - смени раскладку
-      - поменяй раскладку
-      - смени язык
-      - поменяй язык
-      - переключи на русский
-      - переключи на английский
-      - смени раскладку на русскую
-      - поменяй раскладку на русскую
-      - поменяй раскладку на английскую
-      - смени раскладку на английскую
-      - смени язык на русский
-      - поменяй язык на русский
-      - смени язык на английский
-      - поменяй язык на английский
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/system/scripts/set_language.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+          - ok3
+      phrases:
+        - смени раскладку
+        - поменяй раскладку
+        - смени язык
+        - поменяй язык
+        - переключи на русский
+        - переключи на английский
+        - смени раскладку на русскую
+        - поменяй раскладку на русскую
+        - поменяй раскладку на английскую
+        - смени раскладку на английскую
+        - смени язык на русский
+        - поменяй язык на русский
+        - смени язык на английский
+        - поменяй язык на английский
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/utils/open_file_manager.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+        phrases:
+          - открой проводник
+          - открой файлы
+          - открой файловый менеджер
+    - command:
+        action: cli
+        cli_cmd: /home/silenth/virtual-assistant/commands/utils/close_file_manager.sh
+      voice:
+        sounds:
+          - ok1
+          - ok2
+        phrases:
+          - закрой проводник
+          - закрой файлы
+          - закрой файловый менеджер

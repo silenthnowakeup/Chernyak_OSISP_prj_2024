@@ -1,0 +1,13 @@
+list:
+  - description: "Start Assistant"
+    command:
+      action: "start_assistant"
+  - description: "Stop Assistant"
+    command:
+      action: "stop_assistant"
+  - description: "Custom Command"
+    command:
+      action: "cli"
+      cli_cmd: "echo"
+      cli_args:
+        - "Hello, World!"

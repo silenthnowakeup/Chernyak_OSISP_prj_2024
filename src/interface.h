@@ -1,0 +1,8 @@
+//
+// Created by silenth on 01.06.24.
+//
+
+#ifndef VIRTUAL_ASSISTANT_INTERFACE_H
+#define VIRTUAL_ASSISTANT_INTERFACE_H
+
+#endif // VIRTUAL_ASSISTANT_INTERFACE_H

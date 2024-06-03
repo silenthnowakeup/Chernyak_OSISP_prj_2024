@@ -1,5 +1,5 @@
 CPPFLAGS += -std=c++17 -Wall
-LDFLAGS += -lcurl -lasound -ljsoncpp -lvosk -lpv_porcupine -lyaml-cpp
+LDFLAGS += -lcurl -lasound -ljsoncpp -lvosk -lpv_porcupine -lyaml-cpp -lncurses
 LDFLAG += -pthread
 BIN_DIR=./bin
 OBJS = main.o assistant.o

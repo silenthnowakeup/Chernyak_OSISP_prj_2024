@@ -22,7 +22,7 @@ const char* access_key = "8hu5VS6YtfRL+TZT6H6LKAcsXc2f0GxkHQsLGwvWd1IT23RtqnMDpg
 const char* keyword_path = "/home/silenth/testVoskApi/Компьютер_ru_linux_v3_0_0.ppn";
 const char* model_file_path = "/home/silenth/porcupine/lib/common/porcupine_params_ru.pv";
 const char* model_path = "/home/silenth/testVoskApi/model_small";
-const std::string sound_base_path = "/home/silenth/virtual-assistant/sound/jarvis-remake/";
+const std::string sound_base_path = "/home/silenth/virtual-assistant/sound/jarvis-og/";
 
 struct Command {
   std::string action;
@@ -98,21 +98,21 @@ std::vector<Command> loadCommandsFromDirectory(const std::string& directoryPath)
 }
 
 void executeCommand(const Command& cmd) {
+  if (!cmd.sounds.empty()) {
+    std::string sound_file = getRandomSound(cmd.sounds);
+    std::cout << "Playing command sound: " << sound_file << std::endl;
+    play_wav(sound_base_path + sound_file + ".wav");
+  } else {
+    std::cout << "No sounds specified for command: " << cmd.action << std::endl;
+  }
+
   if (cmd.action == "cli") {
     std::string full_cmd = cmd.cli_cmd;
     for (const auto& arg : cmd.cli_args) {
       full_cmd += " " + arg;
     }
-    std::cout << "Executing command: " << full_cmd << std::endl; // Отладочное сообщение
+    std::cout << "Executing command: " << full_cmd << std::endl;
     system(full_cmd.c_str());
-  } else if (cmd.action == "voice") {
-    if (!cmd.sounds.empty()) {
-      std::string sound_file = getRandomSound(cmd.sounds);
-      std::cout << "Playing command sound: " << sound_file << std::endl;
-      play_wav(sound_base_path + sound_file + ".wav");
-    } else {
-      std::cout << "No sounds specified for command: " << cmd.action << std::endl;
-    }
   }
 }
 
@@ -174,7 +174,7 @@ std::string getRandomSound(const std::vector<std::string>& sounds) {
 
 pv_porcupine_t* init_porcupine() {
   pv_porcupine_t *porcupine;
-  const float sensitivity = 1.f;
+  const float sensitivity = 0.5f;
   pv_status_t status = pv_porcupine_init(access_key, model_file_path, 1, &keyword_path, &sensitivity, &porcupine);
   if (status != PV_STATUS_SUCCESS) {
     std::cerr << "Failed to initialize Porcupine: " << pv_status_to_string(status) << std::endl;
@@ -228,7 +228,7 @@ int read_audio_data(snd_pcm_t* capture_handle, int16_t* buffer) {
 
 void process_audio(snd_pcm_t* capture_handle, pv_porcupine_t* porcupine, VoskRecognizer* recognizer, const std::vector<Command>& commands) {
   int16_t buffer[FRAME_LENGTH];
-  bool is_wake_word_detected = false;
+  bool is_listening = false;
 
   while (true) {
     if (read_audio_data(capture_handle, buffer) != 0) {
@@ -245,31 +245,33 @@ void process_audio(snd_pcm_t* capture_handle, pv_porcupine_t* porcupine, VoskRec
     if (result >= 0) {
       std::cout << "Wake word detected!" << std::endl;
       play_wav(sound_base_path + "greet1.wav");
-      is_wake_word_detected = true;
+      is_listening = true;
     }
 
-    if (is_wake_word_detected && vosk_recognizer_accept_waveform(recognizer, (const char*)buffer, FRAME_LENGTH * sizeof(int16_t))) {
+    if (is_listening && vosk_recognizer_accept_waveform(recognizer, (const char*)buffer, FRAME_LENGTH * sizeof(int16_t))) {
       const char* result_json = vosk_recognizer_result(recognizer);
       Json::Value root;
       Json::Reader reader;
       if (reader.parse(result_json, root)) {
         std::string text = root["text"].asString();
         std::cout << "Recognized: " << text << std::endl;
-        is_wake_word_detected = false;
 
+        bool stop_listening = false;
         for (const auto& cmd : commands) {
           for (const auto& phrase : cmd.phrases) {
             if (text.find(phrase) != std::string::npos) {
               executeCommand(cmd);
-              if (cmd.action != "cli" && !cmd.sounds.empty()) {
-                std::string sound_file = getRandomSound(cmd.sounds);
-                std::cout << "Playing command sound: " << sound_file << std::endl;
-                play_wav(sound_base_path + sound_file + ".wav");
+              if (cmd.action == "stop_chaining") {
+                stop_listening = true;
               }
               break;
             }
           }
+          if (stop_listening) {
+            break;
+          }
         }
+        is_listening = !stop_listening;
       }
     }
   }
@@ -282,11 +284,11 @@ void savePid(const std::string& filePath) {
 }
 
 int main() {
-  srand(time(0)); // Инициализация генератора случайных чисел
+  srand(time(0));
   std::string commandsDir = "/home/silenth/virtual-assistant/commands";
   std::vector<Command> commands = loadCommandsFromDirectory(commandsDir);
 
-  vosk_set_log_level(0);
+  vosk_set_log_level(1);
   VoskModel *model = vosk_model_new(model_path);
   if (!model) {
     std::cerr << "Failed to load the model" << std::endl;
@@ -301,7 +303,7 @@ int main() {
     return -1;
   }
 
-  savePid("/home/silenth/virtual-assistant/silence.pid");
+  savePid("/home/silenth/virtual-assistant/tmp/silence.pid");
 
   process_audio(capture_handle, porcupine, recognizer, commands);
 
